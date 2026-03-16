@@ -1,17 +1,11 @@
 # TD noté — Tests et performance (3h)
 
-Sujet de **TD noté** : FilmApi (API Films, MongoDB), refacto des tests (AAA, test data builders, snapshot testing avec Verify), tests d’intégration avec Testcontainers.MongoDb, et tests de performance (k6, InfluxDB, Grafana) via Aspire.
-
----
-
 ## Prérequis
 
 - **.NET 10** SDK
 - **Docker** (pour Testcontainers en tests, et pour MongoDB / InfluxDB / Grafana via l’AppHost)
-- **k6** (optionnel, pour lancer les scripts de charge depuis la ligne de commande)
+- **Task** (pour lancer les tests de charge/spike via le Taskfile) — [Installation Task](https://taskfile.dev/docs/installation)
 - IDE (Visual Studio, Rider ou VS Code)
-
-La solution est au format **.slnx** (fichier XML). Ouvrir `FilmApi.slnx` à la racine ou utiliser `dotnet sln` avec ce fichier.
 
 ---
 
@@ -19,19 +13,25 @@ La solution est au format **.slnx** (fichier XML). Ouvrir `FilmApi.slnx` à la r
 
 ```
 ├── FilmApi.slnx
+├── README.md
 ├── AppHost/                    # Aspire : MongoDB, FilmApi, seeds (50k, 500k), InfluxDB, Grafana
 ├── src/
 │   └── FilmApi/                # API (GET/POST /films), modèle Film imbriqué, MongoDB
 │       ├── Models/             # Film, Director, Actor, Genre, Country, CreateFilmRequest, PagedResult
 │       ├── Repositories/       # IFilmRepository, FilmRepository
-│       └── Services/          # IFilmService, FilmService
-├── scripts/
-│   ├── SeedFilms/              # Application console : seed 50k ou 500k (args)
-│   ├── lib/                    # config.js partagé pour k6 (BASE_URL, TOTAL_ITEMS, /films)
-│   ├── load-test/              # load-test.js (50k ou 500k selon TOTAL_ITEMS)
-│   └── spike-test/             # spike-test.js (50k ou 500k)
+│       └── Services/           # IFilmService, FilmService
+├── SeedFilms/                  # Application console : seed 50k ou 500k (args)
+├── k6/                         # Scripts k6
+│   ├── load.js                 # Load test (50k ou 500k selon TOTAL_ITEMS)
+│   └── spike.js                # Spike test (50k ou 500k)
 ├── grafana/
-│   └── provisioning/          # Datasource InfluxDB + dashboard k6 (même que iut-performance-testing)
+│   └── provisioning/           # Datasource InfluxDB + dashboard k6
+├── reports/                    # Rapports des tests de performance (à compléter)
+│   ├── captures/               # Captures d’écran Grafana (ex. load-50k.png)
+│   ├── load-50k.md             # Template load test 50k
+│   ├── load-500k.md            # Template load test 500k
+│   ├── spike-50k.md            # Template spike test 50k
+│   └── spike-500k.md           # Template spike test 500k
 └── tests/
     └── FilmApi.Tests/          # Unitaires (mock) + intégration (MongoFixture, WebApplicationFactory)
         ├── MongoFixture.cs
@@ -53,90 +53,73 @@ La solution est au format **.slnx** (fichier XML). Ouvrir `FilmApi.slnx` à la r
 
 ---
 
-## Workflow — Tests de performance
-
-1. **Lancer l’AppHost** : `dotnet run --project AppHost` (à la racine).
-2. **Dans le tableau de bord Aspire** :
-   - Démarrer **film-api** (et les conteneurs MongoDB, InfluxDB, Grafana).
-   - Lancer **une seed** : **seed-50k** ou **seed-500k** (démarrage explicite). Attendre la fin de l’insertion.
-3. **Lancer un test de performance** :
-   - **Dossiers** : `scripts/load-test/` et `scripts/spike-test/`.
-   - **Deux exécutions par dossier** : 50k (TOTAL_ITEMS=50000) et 500k (TOTAL_ITEMS=500000).
-   - Depuis un terminal (avec k6 installé), en utilisant l’URL de **film-api** affichée dans le dashboard :
-     ```bash
-     k6 run -e BASE_URL=http://localhost:XXXX -e TOTAL_ITEMS=50000 scripts/load-test/load-test.js
-     k6 run -e BASE_URL=http://localhost:XXXX -e TOTAL_ITEMS=500000 scripts/load-test/load-test.js
-     k6 run -e BASE_URL=http://localhost:XXXX -e TOTAL_ITEMS=50000 scripts/spike-test/spike-test.js
-     k6 run -e BASE_URL=http://localhost:XXXX -e TOTAL_ITEMS=500000 scripts/spike-test/spike-test.js
-     ```
-   - Remplacer `XXXX` par le port de l’API (voir le dashboard Aspire).
-4. **Métriques** : k6 peut envoyer les métriques vers InfluxDB (option `-o xk6-influxdb` si configuré) ; **Grafana** (port 3000) est provisionné avec le datasource InfluxDB et le dashboard **k6 Load Testing**.
-
----
-
 ## Consignes par partie (critères de notation)
 
-### 1. Refacto AAA (§2)
+### 1. Refacto AAA
 
-- **Objectif** : Chaque test doit avoir des commentaires ou un découpage clair **Arrange** (données, mocks), **Act** (un seul appel métier ou HTTP), **Assert** (uniquement des vérifications).
+- **Objectif** : Chaque test doit avoir des commentaires ou un découpage clair **Arrange** (données, mocks), **Act** (un seul appel métier ou HTTP),
+  **Assert** (uniquement des vérifications).
 - **Critères** : lisibilité, séparation nette des trois blocs, pas d’assertion dans l’Act.
 
-### 2. Test Data Builders (§3)
+### 2. Test Data Builders
 
-- **Objectif** : Avec le modèle **Film** imbriqué (Réalisateur, Acteurs, Genres, etc.), construire des instances en test via des **builders** (valeurs par défaut, surcharge uniquement de ce qui compte).
-- **À faire** : introduire **FilmBuilder** (API fluide : `WithTitle`, `WithYear`, `WithDirector`, `WithActors`, `WithGenres`, etc.), et éventuellement **DirectorBuilder**, **ActorBuilder**. Refactoriser **au moins 3 tests** pour utiliser ces builders.
+- **Objectif** : Avec le modèle **Film** imbriqué (Réalisateur, Acteurs, Genres, etc.), construire des instances en test via des **builders** (valeurs par
+  défaut, surcharge uniquement de ce qui compte).
+- **À faire** : introduire **FilmBuilder** (API fluide : `WithTitle`, `WithYear`, `WithDirector`, `WithActors`, `WithGenres`, etc.), et éventuellement
+  **DirectorBuilder**, **ActorBuilder**. Refactoriser **au moins 3 tests** pour utiliser ces builders.
 - **Critères** : API fluide, valeurs par défaut cohérentes, au moins un test avec customisation partielle (ex. seul le titre ou seul le réalisateur change).
 
-### 3. Snapshot testing — Verify (§4)
+### 3. Snapshot testing — Verify
 
 - **Objectif** : Remplacer les longues séries d’`Assert.Equal` sur un DTO complexe par **un snapshot** Verify.
-- **À faire** : refactoriser **au moins un test** (ex. `FilmDetailSnapshotTests`) en utilisant Verify (ex. `await Verify(filmDetailDto)`). Générer le fichier `.verified.*` au premier run. Pour les champs instables (Id, Guid, DateTime), utiliser les paramètres Verify (scoped settings, ignore de membres). **Verify.Xunit** est déjà installé dans le projet de tests ; s’appuyer sur la [documentation Verify](https://github.com/VerifyTests/Verify).
-- **Critères** : au moins un test converti en snapshot sur une sortie « Film complexe » ; snapshot stable ; fichier snapshot versionné ou expliqué dans le README.
+- **À faire** : refactoriser **au moins un test** (ex. `FilmDetailSnapshotTests`) en utilisant Verify (ex. `await Verify(filmDetailDto)`). Générer le fichier
+  `.verified.*` au premier run. Pour les champs instables (Id, Guid, DateTime), utiliser les paramètres Verify (scoped settings, ignore de membres).
+  **Verify.Xunit** est déjà installé dans le projet de tests ; s’appuyer sur la [documentation Verify](https://github.com/VerifyTests/Verify).
+- **Critères** : au moins un test converti en snapshot sur une sortie « Film complexe » ; snapshot stable ; fichier snapshot versionné ou expliqué dans le
+  README.
 
-### 4. Tests d’intégration MongoDB (§6)
+### 4. Tests d’intégration MongoDB
 
 - **Objectif** : Les tests d’intégration font tourner l’API avec une base **MongoDB** (Testcontainers.MongoDb).
-- **À faire** : **MongoFixture** et **WebApplicationFactory** sont fournis. Écrire / compléter **au moins 2 tests** d’intégration (ex. `POST /films` → 201 + film retourné ; `GET /films/{id}` après un POST → 200 avec les bonnes données).
+- **À faire** : **MongoFixture** et **WebApplicationFactory** sont fournis. Écrire / compléter **au moins 2 tests** d’intégration (ex. `POST /films` →
+  201 + film retourné ; `GET /films/{id}` après un POST → 200 avec les bonnes données).
 - **Critères** : conteneur MongoDB partagé (IClassFixture), API lancée avec MongoDB en tests, au moins 2 tests passants (HTTP → Service → MongoDB).
 
-### 5. Aspire — Seeds et perf (§5)
+### 5. Tests de performance
 
-- **Objectif** : Workflow (1) seed 50k ou 500k, (2) test de perf (load ou spike, 50k ou 500k), (3) visualisation Grafana.
-- **Critères** : MongoDB, InfluxDB et Grafana démarrés avec l’AppHost ; workflow respecté ; seed-50k et seed-500k fonctionnels ; tests de perf lancés (dossiers load-test / spike-test, exécutions 50k et 500k) ; métriques visibles dans Grafana.
+- **Objectif** : Exécuter le workflow seed → test de charge → visualisation Grafana (50k ou 500k films ; load ou spike).
+- **Critères** : AppHost avec MongoDB, InfluxDB et Grafana ; seed-50k / seed-500k utilisées ; tests k6 (load.js, spike.js) lancés ; métriques consultées dans
+  Grafana.
 
----
+#### Workflow (à suivre une seule fois par type de test)
 
-## Répartition du temps suggérée (3h)
+| Étape | Action                                                                                                 |
+|-------|--------------------------------------------------------------------------------------------------------|
+| 1     | Lancer l’AppHost : `dotnet run --project AppHost` (à la racine).                                       |
+| 2     | Dans le tableau de bord Aspire : lancer **seed-50k** ou **seed-500k**, attendre la fin de l’insertion. |
+| 3     | Lancer un test k6 (voir ci‑dessous).                                                                   |
+| 4     | Consulter les métriques : **http://localhost:3000/d/k6-load-testing/k6-load-testing** (Grafana).       |
 
-| Partie | Durée  | Contenu |
-|--------|--------|--------|
-| 1      | 20 min | Découverte du squelette, lancement Aspire ; lancer une seed (50k ou 500k), puis un test de perf (load ou spike) ; visualisation Grafana |
-| 2      | 35 min | Refacto AAA sur les tests existants |
-| 3      | 40 min | Test data builders : FilmBuilder (+ éventuellement DirectorBuilder, ActorBuilder), refacto d’au moins 3 tests |
-| 4      | 35 min | Snapshot testing : Verify + au moins un test refactoré (objet ou chaîne), gestion des champs instables |
-| 5      | 50 min | Tests d’intégration MongoDB : MongoFixture, WebApplicationFactory, au moins 2 tests |
-
----
-
-## Commandes utiles
+**Lancer un test k6** (nécessite [Task](https://taskfile.dev/docs/installation)) :
 
 ```bash
-# Restaurer et compiler
-dotnet restore
-dotnet build
-
-# Lancer l’AppHost (MongoDB, API, seeds, InfluxDB, Grafana)
-dotnet run --project AppHost
-
-# Tests
-dotnet test tests/FilmApi.Tests
+task load-50k     # load test, 50 000 films
+task load-500k    # load test, 500 000 films
+task spike-50k    # spike test, 50 000 films
+task spike-500k   # spike test, 500 000 films
 ```
 
----
+Sans Task : construire l’image puis exécuter avec `docker compose -f docker-compose.k6.yml` en passant `BASE_URL`, `TOTAL_ITEMS` (50000 ou 500000) et le
+script (`load.js` ou `spike.js`) — voir le Taskfile pour la commande exacte.
 
-## Références
+#### Rapports à rendre (`reports/`)
 
-- Plan de conception : **PLAN.md** (à la racine).
-- Suivi du développement du squelette : **DEVELOPMENT.md** (à la racine).
-- Verify : [Verify / GitHub](https://github.com/VerifyTests/Verify).
-- iut-integration-testing, iut-test-data-builder, iut-snapshot-testing, iut-performance-testing (projets de référence).
+| Fichier         | Commande          | Description               |
+|-----------------|-------------------|---------------------------|
+| `load-50k.md`   | `task load-50k`   | Load test, 50 000 films   |
+| `load-500k.md`  | `task load-500k`  | Load test, 500 000 films  |
+| `spike-50k.md`  | `task spike-50k`  | Spike test, 50 000 films  |
+| `spike-500k.md` | `task spike-500k` | Spike test, 500 000 films |
+
+Pour chaque rapport : exécuter le test → capture d’écran du dashboard Grafana dans `reports/captures/` (nom du fichier indiqué dans le template) → compléter la
+section **Observations** dans le `.md` (débit, latence, erreurs).
