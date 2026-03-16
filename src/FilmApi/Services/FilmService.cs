@@ -12,7 +12,7 @@ public class FilmService : IFilmService
         _repository = repository;
     }
 
-    public async Task<Film> CreateAsync(CreateFilmRequest request, CancellationToken ct = default)
+    public async Task<Film> CreateAsync(CreateFilmRequest request)
     {
         var film = new Film
         {
@@ -26,16 +26,15 @@ public class FilmService : IFilmService
             Acteurs = request.Acteurs,
             PaysProduction = request.PaysProduction
         };
-        return await _repository.AddAsync(film, ct);
+        return await _repository.AddAsync(film);
     }
 
-    public Task<Film?> GetByIdAsync(string id, CancellationToken ct = default)
-        => _repository.GetByIdAsync(id, ct);
+    public Task<Film?> GetByIdAsync(string id) => _repository.GetByIdAsync(id);
 
-    public async Task<PagedResult<Film>> GetPagedAsync(int page, int pageSize, CancellationToken ct = default)
+    public async Task<PagedResult<Film>> GetPagedAsync(int page, int pageSize)
     {
         var skip = (page - 1) * pageSize;
-        var (items, totalCount) = await _repository.GetPagedAsync(skip, pageSize, ct);
+        var (items, totalCount) = await _repository.GetPagedAsync(skip, pageSize);
         return new PagedResult<Film>(totalCount, page, pageSize, items);
     }
 }

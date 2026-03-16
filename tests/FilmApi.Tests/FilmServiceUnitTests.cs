@@ -33,7 +33,7 @@ public class FilmServiceUnitTests
             PaysProduction = new Country { Code = "US", Nom = "États-Unis" }
         };
         substituteRepo
-            .AddAsync(Arg.Any<Film>(), Arg.Any<CancellationToken>())
+            .AddAsync(Arg.Any<Film>())
             .Returns(expectedFilm);
 
         var service = new FilmService(substituteRepo);
@@ -56,7 +56,7 @@ public class FilmServiceUnitTests
         Assert.Equal(2021, result.Annee);
         await substituteRepo
             .Received(1)
-            .AddAsync(Arg.Is<Film>(f => f.Titre == "Dune"), Arg.Any<CancellationToken>());
+            .AddAsync(Arg.Is<Film>(f => f.Titre == "Dune"));
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public class FilmServiceUnitTests
         var substituteRepo = Substitute.For<IFilmRepository>();
         var director = new Director { Id = "d2", Nom = "Nolan", Prenom = "Christopher", Nationalite = "GB" };
         var film = new Film { Id = "f2", Titre = "Inception", Annee = 2010, Realisateur = director, Genres = new List<Genre>(), Acteurs = new List<Actor>() };
-        substituteRepo.GetByIdAsync("f2", Arg.Any<CancellationToken>()).Returns(film);
+        substituteRepo.GetByIdAsync("f2").Returns(film);
 
         var service = new FilmService(substituteRepo);
         var result = await service.GetByIdAsync("f2");

@@ -49,7 +49,7 @@ public class FilmDetailSnapshotTests
             Genres = genres,
             PaysProduction = new Country { Code = "US", Nom = "États-Unis" }
         };
-        substituteRepo.GetByIdAsync("film-abc-123", Arg.Any<CancellationToken>()).Returns(film);
+        substituteRepo.GetByIdAsync("film-abc-123").Returns(film);
 
         var service = new FilmService(substituteRepo);
         var result = await service.GetByIdAsync("film-abc-123");

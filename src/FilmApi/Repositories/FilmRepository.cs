@@ -12,27 +12,27 @@ public class FilmRepository : IFilmRepository
         _collection = collection;
     }
 
-    public async Task<Film> AddAsync(Film film, CancellationToken ct = default)
+    public async Task<Film> AddAsync(Film film)
     {
-        await _collection.InsertOneAsync(film, cancellationToken: ct);
+        await _collection.InsertOneAsync(film);
         return film;
     }
 
-    public async Task<Film?> GetByIdAsync(string id, CancellationToken ct = default)
+    public async Task<Film?> GetByIdAsync(string id)
     {
-        var cursor = await _collection.FindAsync(f => f.Id == id, cancellationToken: ct);
-        return await cursor.FirstOrDefaultAsync(ct);
+        var cursor = await _collection.FindAsync(f => f.Id == id);
+        return await cursor.FirstOrDefaultAsync();
     }
 
-    public async Task<(IReadOnlyList<Film> Items, int TotalCount)> GetPagedAsync(int skip, int take, CancellationToken ct = default)
+    public async Task<(IReadOnlyList<Film> Items, int TotalCount)> GetPagedAsync(int skip, int take)
     {
-        var totalCount = await _collection.CountDocumentsAsync(FilterDefinition<Film>.Empty, cancellationToken: ct);
+        var totalCount = await _collection.CountDocumentsAsync(FilterDefinition<Film>.Empty);
         var items = await _collection
             .Find(FilterDefinition<Film>.Empty)
             .SortBy(f => f.Id)
             .Skip(skip)
             .Limit(take)
-            .ToListAsync(ct);
+            .ToListAsync();
         return (items, (int)totalCount);
     }
 }

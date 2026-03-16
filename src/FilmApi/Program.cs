@@ -46,26 +46,25 @@ app.UseSwaggerUI(options =>
 app.MapGet("/films", async (
     IFilmService service,
     int page = 1,
-    int pageSize = 100,
-    CancellationToken ct = default) =>
+    int pageSize = 100) =>
 {
     if (page < 1) page = 1;
     if (pageSize < 1) pageSize = 100;
-    var result = await service.GetPagedAsync(page, pageSize, ct);
+    var result = await service.GetPagedAsync(page, pageSize);
     return Results.Ok(result);
 });
 
-app.MapGet("/films/{id}", async (string id, IFilmService service, CancellationToken ct) =>
+app.MapGet("/films/{id}", async (string id, IFilmService service) =>
 {
-    var film = await service.GetByIdAsync(id, ct);
+    var film = await service.GetByIdAsync(id);
     return film is null ? Results.NotFound() : Results.Ok(film);
 });
 
-app.MapPost("/films", async (CreateFilmRequest request, IFilmService service, CancellationToken ct) =>
+app.MapPost("/films", async (CreateFilmRequest request, IFilmService service) =>
 {
     if (string.IsNullOrWhiteSpace(request.Titre))
         return Results.BadRequest("Titre is required.");
-    var film = await service.CreateAsync(request, ct);
+    var film = await service.CreateAsync(request);
     return Results.Created($"/films/{film.Id}", film);
 });
 

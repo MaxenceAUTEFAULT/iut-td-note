@@ -4,7 +4,7 @@ namespace FilmApi.Services;
 
 public interface IFilmService
 {
-    Task<Film> CreateAsync(CreateFilmRequest request, CancellationToken ct = default);
-    Task<Film?> GetByIdAsync(string id, CancellationToken ct = default);
-    Task<PagedResult<Film>> GetPagedAsync(int page, int pageSize, CancellationToken ct = default);
+    Task<Film> CreateAsync(CreateFilmRequest request);
+    Task<Film?> GetByIdAsync(string id);
+    Task<PagedResult<Film>> GetPagedAsync(int page, int pageSize);
 }
