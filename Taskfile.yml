@@ -1,0 +1,41 @@
+version: '3'
+
+vars:
+  BASE_URL: 'http://localhost:1803'
+  COMPOSE_K6: docker compose -f docker-compose.k6.yml
+  K6_SCRIPT_DIR: /scripts
+
+tasks:
+  default:
+    desc: Affiche l'aide
+    cmds:
+      - task --list
+
+  k6-build:
+    desc: Construire l'image Docker k6 (xk6-influxdb)
+    cmds:
+      - '{{.COMPOSE_K6}} build k6'
+
+  load-50k:
+    desc: Load test Docker (TOTAL_ITEMS=50000), sortie InfluxDB
+    deps: [k6-build]
+    cmds:
+      - '{{.COMPOSE_K6}} run --rm -e BASE_URL="{{.BASE_URL}}" -e TOTAL_ITEMS=50000 k6 run {{.K6_SCRIPT_DIR}}/load.js -o xk6-influxdb'
+
+  load-500k:
+    desc: Load test Docker (TOTAL_ITEMS=500000)
+    deps: [k6-build]
+    cmds:
+      - '{{.COMPOSE_K6}} run --rm -e BASE_URL="{{.BASE_URL}}" -e TOTAL_ITEMS=500000 k6 run {{.K6_SCRIPT_DIR}}/load.js -o xk6-influxdb'
+
+  spike-50k:
+    desc: Spike test Docker (TOTAL_ITEMS=50000)
+    deps: [k6-build]
+    cmds:
+      - '{{.COMPOSE_K6}} run --rm -e BASE_URL="{{.BASE_URL}}" -e TOTAL_ITEMS=50000 k6 run {{.K6_SCRIPT_DIR}}/spike.js -o xk6-influxdb'
+
+  spike-500k:
+    desc: Spike test Docker (TOTAL_ITEMS=500000)
+    deps: [k6-build]
+    cmds:
+      - '{{.COMPOSE_K6}} run --rm -e BASE_URL="{{.BASE_URL}}" -e TOTAL_ITEMS=500000 k6 run {{.K6_SCRIPT_DIR}}/spike.js -o xk6-influxdb'

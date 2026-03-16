@@ -10,8 +10,6 @@ var mongo = builder.AddMongoDB("mongo", userName: mongoUser, password: mongoPass
 var mongodb = mongo.AddDatabase("filmapi");
 
 builder.AddProject<Projects.FilmApi>("filmApp")
-    .WithHttpEndpoint()
-    .WithHttpsEndpoint()
     .WaitFor(mongodb)
     .WithReference(mongodb)
     .WithUrl("/swagger");

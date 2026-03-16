@@ -1,5 +1,5 @@
 # k6 avec xk6-output-influxdb pour envoyer les métriques vers InfluxDB 2
-FROM golang:1.22-alpine AS builder
+FROM golang:1.25-alpine AS builder
 RUN apk add --no-cache git
 RUN go install go.k6.io/xk6/cmd/xk6@latest
 RUN xk6 build --with github.com/grafana/xk6-output-influxdb --output /k6

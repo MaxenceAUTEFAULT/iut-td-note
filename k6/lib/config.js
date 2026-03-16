@@ -5,7 +5,7 @@
  * TOTAL_ITEMS : nombre d'éléments en base (50000 ou 500000 après seed).
  * PAGE_SIZE : taille de page (défaut 100), doit correspondre à l'API /films.
  */
-export const BASE_URL = __ENV.services__filmApp__https__0;
+export const BASE_URL = __ENV.BASE_URL;
 
 export const TOTAL_ITEMS = __ENV.TOTAL_ITEMS ? parseInt(__ENV.TOTAL_ITEMS, 10) : null;
 
