@@ -8,12 +8,8 @@ _Collez ici une capture d’écran du dashboard Grafana (http://localhost:3000/d
 
 <!-- Remplacer par votre capture, ex. : ![Capture load-500k](captures/load-500k.png) -->
 
-![Capture load-500k](captures/load-500k.png)
+![Capture load-500k](captures/load500k.png)
 
 ## 2. Observations
 
-_Décrivez ce que vous constatez lors de l’exécution du test (débit, latence, erreurs, comportement du système, etc.)._
-
-- 
-- 
-- 
+Dégradation progressive mais critique : 65 erreurs sur 155 requêtes (42%), latences bimodales entre quelques ms et 31,5 s, montrant une saturation partielle du système.

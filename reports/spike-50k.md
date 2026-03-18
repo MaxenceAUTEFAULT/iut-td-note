@@ -12,8 +12,4 @@ _Collez ici une capture d’écran du dashboard Grafana (http://localhost:3000/d
 
 ## 2. Observations
 
-_Décrivez ce que vous constatez lors de l’exécution du test (pic de charge, latence, erreurs, dégradation, reprise, etc.)._
-
-- 
-- 
-- 
+- Le pic soudain provoque une dégradation sévère : 50% d'erreurs et latences qui s'envolent à 1,22 s sur seulement 4 requêtes.

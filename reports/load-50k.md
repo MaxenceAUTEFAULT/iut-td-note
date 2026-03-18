@@ -8,12 +8,8 @@ _Collez ici une capture d’écran du dashboard Grafana (http://localhost:3000/d
 
 <!-- Remplacer par votre capture, ex. : ![Capture load-50k](captures/sample.png) -->
 
-![Capture load-50k](captures/load-50k.png)
+![Capture load-50k](captures/load50k-1.png)
 
 ## 2. Observations
 
-_Décrivez ce que vous constatez lors de l’exécution du test (débit, latence, erreurs, comportement du système, etc.)._
-
-- 
-- 
-- 
+- Comportement stable et performant : 36 VUs, 19 req/s, aucune erreur, latences très basses (p99 = 19,5 ms).
